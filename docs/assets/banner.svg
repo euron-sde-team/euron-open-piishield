@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-labelledby="t d">
+  <title id="t">Euron Open PIIShield</title>
+  <desc id="d">Detect, mask, redact, tokenize and anonymize PII and financial data, self-hosted</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0c0a16"/>
+      <stop offset="1" stop-color="#15102b"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a78bfa"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#8b5cf6" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity="0.035"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="320" rx="16" fill="url(#bg)"/>
+  <rect width="1280" height="320" rx="16" fill="url(#grid)"/>
+
+  <g font-family="Inter, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+    <text x="72" y="140" fill="#f3eefe" font-size="52" font-weight="650" letter-spacing="-1.2">Euron Open PIIShield</text>
+    <text x="74" y="186" fill="#ab9fd6" font-size="21" font-weight="400">Detect, mask, redact, tokenize and anonymize PII and financial data, self-hosted.</text>
+    <text x="74" y="246" font-family="JetBrains Mono, SFMono-Regular, Menlo, monospace" font-size="15" fill="#847aab" xml:space="preserve">validated checksums<tspan fill="#2e2850">  /  </tspan>reversible tokenization<tspan fill="#2e2850">  /  </tspan>AI prompt gateway<tspan fill="#2e2850">  /  </tspan>Terraform</text>
+  </g>
+
+  <!-- A value meeting the shield: detected, then protected -->
+  <g transform="translate(900 56)" font-family="JetBrains Mono, SFMono-Regular, Menlo, monospace" font-size="11">
+    <circle cx="150" cy="104" r="118" fill="url(#halo)"/>
+    <!-- incoming raw values -->
+    <rect x="0" y="36" width="118" height="26" rx="8" fill="#201a3a"/>
+    <text x="12" y="53" fill="#c4b5fd">priya.nair@&#8230;</text>
+    <rect x="0" y="92" width="118" height="26" rx="8" fill="#201a3a"/>
+    <text x="12" y="109" fill="#c4b5fd">4111 1111 1111&#8230;</text>
+    <rect x="0" y="148" width="118" height="26" rx="8" fill="#201a3a"/>
+    <text x="12" y="165" fill="#c4b5fd">ABCPD1234E</text>
+    <path d="M122 49 H158 M122 105 H158 M122 161 H158" stroke="#443b73" stroke-width="2" stroke-dasharray="4 4"/>
+    <!-- shield -->
+    <path d="M150 28 L108 44 v34 c0 28 18 50 42 57 c24 -7 42 -29 42 -57 V44 Z" transform="translate(0 20)" fill="url(#shield)"/>
+    <rect x="132" y="88" width="36" height="12" rx="6" fill="#ffffff"/>
+    <circle cx="150" cy="116" r="5" fill="#ffffff" fill-opacity="0.85"/>
+    <!-- protected outcomes -->
+    <path d="M194 49 H242" stroke="#a78bfa" stroke-width="2"/>
+    <rect x="246" y="36" width="130" height="26" rx="8" fill="#241a40"/>
+    <text x="258" y="53" fill="#ddd6fe">pr***@example</text>
+    <path d="M194 105 H242" stroke="#34d399" stroke-width="2"/>
+    <rect x="246" y="92" width="130" height="26" rx="8" fill="#10281f"/>
+    <text x="258" y="109" fill="#6ee7b7">[FINANCIAL_001]</text>
+    <path d="M194 161 H242" stroke="#fb7185" stroke-width="2"/>
+    <rect x="246" y="148" width="130" height="26" rx="8" fill="#2e1520"/>
+    <text x="258" y="165" fill="#fda4af">[REDACTED]</text>
+  </g>
+</svg>

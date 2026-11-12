@@ -1,0 +1,1896 @@
+openapi: 3.1.0
+info:
+  title: Euron Open PIIShield
+  description: "\nDetects, masks, redacts, tokenizes and anonymizes personal and financial data across\n\
+    text, JSON, documents and AI agent prompts/responses.\n\n* **People** sign in with `POST /api/v1/auth/signup`\
+    \ or `/api/v1/auth/login` and use the\n  session token as `Authorization: Bearer <token>`.\n* **Automation\
+    \ / SDKs** use a project API key: `Authorization: Bearer pii_...`. A read key\n  can scan and read;\
+    \ a write key can also mask, redact, tokenize and manage policies.\n* **Vault access** (detokenizing\
+    \ a placeholder back to its original value) is a separate\n  permission from any role or key scope:\
+    \ an owner must explicitly grant it with\n  `POST /api/v1/vault/grants`.\n* Every scan, mask, redact,\
+    \ tokenize and detokenize call is recorded in the audit log\n  (`GET /api/v1/audit`), which never\
+    \ contains an original value or a vault mapping.\n"
+  version: 0.1.0
+paths:
+  /healthz:
+    get:
+      tags:
+      - health
+      summary: Liveness probe
+      operationId: healthz_healthz_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Healthz Healthz Get
+  /readyz:
+    get:
+      tags:
+      - health
+      summary: 'Readiness probe: database and cache reachable'
+      operationId: readyz_readyz_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Readyz Readyz Get
+  /api/v1/auth/signup:
+    post:
+      tags:
+      - auth
+      summary: Create an organization
+      operationId: signup_api_v1_auth_signup_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/login:
+    post:
+      tags:
+      - auth
+      summary: Sign in
+      operationId: login_api_v1_auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/keys:
+    post:
+      tags:
+      - auth
+      summary: Create a project API key
+      operationId: create_key_api_v1_auth_keys_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiKeyIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyCreated'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - auth
+      summary: List a project's API keys
+      operationId: list_keys_api_v1_auth_keys_get
+      parameters:
+      - name: project_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiKeyOut'
+                title: Response List Keys Api V1 Auth Keys Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/keys/{key_id}:
+    delete:
+      tags:
+      - auth
+      summary: Revoke an API key
+      operationId: revoke_key_api_v1_auth_keys__key_id__delete
+      parameters:
+      - name: key_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Key Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects:
+    get:
+      tags:
+      - projects
+      summary: List projects
+      operationId: list_projects_api_v1_projects_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ProjectOut'
+                type: array
+                title: Response List Projects Api V1 Projects Get
+    post:
+      tags:
+      - projects
+      summary: Create a project
+      operationId: create_project_api_v1_projects_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}:
+    get:
+      tags:
+      - projects
+      summary: Get a project
+      operationId: get_project_api_v1_projects__project_id__get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - projects
+      summary: Update a project
+      operationId: update_project_api_v1_projects__project_id__patch
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/policy:
+    get:
+      tags:
+      - policies
+      summary: Get a project's policy
+      operationId: get_policy_api_v1_projects__project_id__policy_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - policies
+      summary: Replace a project's policy
+      operationId: put_policy_api_v1_projects__project_id__policy_put
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/detectors/scan:
+    post:
+      tags:
+      - detectors
+      summary: Scan text for findings (no protection applied)
+      operationId: scan_api_v1_detectors_scan_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScanTextIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanResultOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/detectors/recognizers:
+    post:
+      tags:
+      - detectors
+      summary: Create a custom recognizer
+      operationId: create_recognizer_api_v1_detectors_recognizers_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomRecognizerIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomRecognizerOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - detectors
+      summary: List a project's custom recognizers
+      operationId: list_recognizers_api_v1_detectors_recognizers_get
+      parameters:
+      - name: project_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomRecognizerOut'
+                title: Response List Recognizers Api V1 Detectors Recognizers Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/detectors/recognizers/{recognizer_id}:
+    delete:
+      tags:
+      - detectors
+      summary: Disable a custom recognizer
+      operationId: delete_recognizer_api_v1_detectors_recognizers__recognizer_id__delete
+      parameters:
+      - name: recognizer_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Recognizer Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/protect/text:
+    post:
+      tags:
+      - protection
+      summary: Scan and protect free text
+      operationId: protect_text_api_v1_protect_text_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProtectTextIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtectTextOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/protect/json:
+    post:
+      tags:
+      - protection
+      summary: Scan and protect a JSON payload
+      operationId: protect_json_api_v1_protect_json_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProtectJsonIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtectJsonOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/vault/detokenize:
+    post:
+      tags:
+      - vault
+      summary: Resolve a placeholder to its original value
+      operationId: detokenize_api_v1_vault_detokenize_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DetokenizeIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetokenizeOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/vault/grants:
+    get:
+      tags:
+      - vault
+      summary: List active vault access grants
+      operationId: list_grants_api_v1_vault_grants_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/VaultGrantOut'
+                type: array
+                title: Response List Grants Api V1 Vault Grants Get
+    post:
+      tags:
+      - vault
+      summary: Grant vault access
+      operationId: create_grant_api_v1_vault_grants_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaultGrantIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaultGrantOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/vault/grants/{grant_id}:
+    delete:
+      tags:
+      - vault
+      summary: Revoke a vault access grant
+      operationId: revoke_grant_api_v1_vault_grants__grant_id__delete
+      parameters:
+      - name: grant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Grant Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/review:
+    get:
+      tags:
+      - review
+      summary: List pending review items
+      operationId: list_pending_api_v1_review_get
+      parameters:
+      - name: project_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReviewItemOut'
+                title: Response List Pending Api V1 Review Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/review/{item_id}/approve:
+    post:
+      tags:
+      - review
+      summary: Approve a finding
+      operationId: approve_api_v1_review__item_id__approve_post
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Item Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewItemOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/review/{item_id}/dismiss:
+    post:
+      tags:
+      - review
+      summary: Dismiss a finding
+      operationId: dismiss_api_v1_review__item_id__dismiss_post
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Item Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewItemOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/documents:
+    post:
+      tags:
+      - documents
+      summary: Upload and protect a document (PDF, DOCX, XLSX or CSV)
+      operationId: protect_document_api_v1_documents_post
+      parameters:
+      - name: project_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_protect_document_api_v1_documents_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/database-scan:
+    post:
+      tags:
+      - database_scan
+      summary: Sample a table and report likely-PII columns
+      operationId: scan_table_api_v1_database_scan_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseScanIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseScanOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/ai-gateway/protect:
+    post:
+      tags:
+      - ai_gateway
+      summary: Protect a prompt before sending it to a model
+      operationId: protect_api_v1_ai_gateway_protect_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GatewayProtectIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayProtectOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/ai-gateway/restore:
+    post:
+      tags:
+      - ai_gateway
+      summary: Restore placeholders in a model's response
+      operationId: restore_api_v1_ai_gateway_restore_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GatewayRestoreIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayRestoreOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/reports/summary:
+    get:
+      tags:
+      - reports
+      summary: Scan and finding totals for the org
+      operationId: get_summary_api_v1_reports_summary_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryReport'
+  /api/v1/audit:
+    get:
+      tags:
+      - audit
+      summary: List audit log entries
+      operationId: list_audit_api_v1_audit_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          title: Limit
+      - name: action
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Action
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ApiKeyCreated:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        prefix:
+          type: string
+          title: Prefix
+        scope:
+          type: string
+          title: Scope
+        key:
+          type: string
+          title: Key
+      type: object
+      required:
+      - id
+      - name
+      - prefix
+      - scope
+      - key
+      title: ApiKeyCreated
+      description: 'Returned exactly once, at creation. The plaintext key is never retrievable again:
+
+        only its prefix and hash are stored (matching the sibling project''s API key pattern).'
+    ApiKeyIn:
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+        scope:
+          type: string
+          enum:
+          - read
+          - write
+          title: Scope
+          default: read
+      additionalProperties: false
+      type: object
+      required:
+      - project_id
+      - name
+      title: ApiKeyIn
+    ApiKeyOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        name:
+          type: string
+          title: Name
+        prefix:
+          type: string
+          title: Prefix
+        scope:
+          type: string
+          title: Scope
+        revoked_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Revoked At
+        last_used_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Used At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - project_id
+      - name
+      - prefix
+      - scope
+      - revoked_at
+      - last_used_at
+      - created_at
+      title: ApiKeyOut
+    AuditEntryOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        actor_kind:
+          type: string
+          title: Actor Kind
+        actor_label:
+          type: string
+          title: Actor Label
+        action:
+          type: string
+          title: Action
+        project_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+        finding_count:
+          type: integer
+          title: Finding Count
+        categories:
+          items:
+            type: string
+          type: array
+          title: Categories
+        details:
+          additionalProperties: true
+          type: object
+          title: Details
+      type: object
+      required:
+      - id
+      - created_at
+      - actor_kind
+      - actor_label
+      - action
+      - project_id
+      - finding_count
+      - categories
+      - details
+      title: AuditEntryOut
+    AuditPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AuditEntryOut'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: AuditPage
+    Body_protect_document_api_v1_documents_post:
+      properties:
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_protect_document_api_v1_documents_post
+    CategoryCount:
+      properties:
+        category:
+          type: string
+          title: Category
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - category
+      - count
+      title: CategoryCount
+    ColumnFinding:
+      properties:
+        column:
+          type: string
+          title: Column
+        category:
+          type: string
+          title: Category
+        confidence:
+          type: number
+          title: Confidence
+        sample_hits:
+          type: integer
+          title: Sample Hits
+      type: object
+      required:
+      - column
+      - category
+      - confidence
+      - sample_hits
+      title: ColumnFinding
+    CustomRecognizerIn:
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        name:
+          type: string
+          maxLength: 80
+          minLength: 1
+          title: Name
+        category:
+          type: string
+          maxLength: 32
+          minLength: 1
+          title: Category
+        pattern:
+          type: string
+          maxLength: 2000
+          minLength: 1
+          title: Pattern
+        confidence:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Confidence
+          default: 0.7
+      additionalProperties: false
+      type: object
+      required:
+      - project_id
+      - name
+      - category
+      - pattern
+      title: CustomRecognizerIn
+    CustomRecognizerOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        name:
+          type: string
+          title: Name
+        category:
+          type: string
+          title: Category
+        pattern:
+          type: string
+          title: Pattern
+        confidence:
+          type: number
+          title: Confidence
+        enabled:
+          type: boolean
+          title: Enabled
+      type: object
+      required:
+      - id
+      - project_id
+      - name
+      - category
+      - pattern
+      - confidence
+      - enabled
+      title: CustomRecognizerOut
+    DatabaseScanIn:
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        engine:
+          type: string
+          enum:
+          - postgres
+          - mysql
+          - sqlite
+          title: Engine
+        connection_string:
+          type: string
+          maxLength: 2000
+          title: Connection String
+        table_name:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Table Name
+        sample_rows:
+          type: integer
+          maximum: 5000.0
+          minimum: 1.0
+          title: Sample Rows
+          default: 200
+      additionalProperties: false
+      type: object
+      required:
+      - project_id
+      - engine
+      - connection_string
+      - table_name
+      title: DatabaseScanIn
+    DatabaseScanOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        table_name:
+          type: string
+          title: Table Name
+        rows_sampled:
+          type: integer
+          title: Rows Sampled
+        columns:
+          items:
+            $ref: '#/components/schemas/ColumnFinding'
+          type: array
+          title: Columns
+      type: object
+      required:
+      - id
+      - table_name
+      - rows_sampled
+      - columns
+      title: DatabaseScanOut
+    DetokenizeIn:
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        placeholder:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Placeholder
+        scope_id:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Scope Id
+      additionalProperties: false
+      type: object
+      required:
+      - project_id
+      - placeholder
+      - scope_id
+      title: DetokenizeIn
+    DetokenizeOut:
+      properties:
+        placeholder:
+          type: string
+          title: Placeholder
+        value:
+          type: string
+          title: Value
+        category:
+          type: string
+          title: Category
+      type: object
+      required:
+      - placeholder
+      - value
+      - category
+      title: DetokenizeOut
+    FindingOut:
+      properties:
+        category:
+          type: string
+          title: Category
+        start:
+          type: integer
+          title: Start
+        end:
+          type: integer
+          title: End
+        confidence:
+          type: number
+          title: Confidence
+        checksum_valid:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Checksum Valid
+        recognizer:
+          type: string
+          title: Recognizer
+      type: object
+      required:
+      - category
+      - start
+      - end
+      - confidence
+      - checksum_valid
+      - recognizer
+      title: FindingOut
+    GatewayProtectIn:
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        prompt:
+          type: string
+          maxLength: 2000000
+          title: Prompt
+        scope_id:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Scope Id
+      additionalProperties: false
+      type: object
+      required:
+      - project_id
+      - prompt
+      title: GatewayProtectIn
+    GatewayProtectOut:
+      properties:
+        protected_prompt:
+          type: string
+          title: Protected Prompt
+        findings:
+          items:
+            $ref: '#/components/schemas/ProtectedFindingOut'
+          type: array
+          title: Findings
+        scope_id:
+          type: string
+          title: Scope Id
+      type: object
+      required:
+      - protected_prompt
+      - findings
+      - scope_id
+      title: GatewayProtectOut
+    GatewayRestoreIn:
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        scope_id:
+          type: string
+          maxLength: 200
+          title: Scope Id
+        model_response:
+          type: string
+          maxLength: 2000000
+          title: Model Response
+      additionalProperties: false
+      type: object
+      required:
+      - project_id
+      - scope_id
+      - model_response
+      title: GatewayRestoreIn
+    GatewayRestoreOut:
+      properties:
+        restored_response:
+          type: string
+          title: Restored Response
+        placeholders_restored:
+          type: integer
+          title: Placeholders Restored
+      type: object
+      required:
+      - restored_response
+      - placeholders_restored
+      title: GatewayRestoreOut
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    LoginIn:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          maxLength: 200
+          title: Password
+      additionalProperties: false
+      type: object
+      required:
+      - email
+      - password
+      title: LoginIn
+    PolicyIn:
+      properties:
+        required_categories:
+          items:
+            type: string
+          type: array
+          title: Required Categories
+        masking_method:
+          additionalProperties:
+            type: string
+            enum:
+            - full_mask
+            - partial_mask
+            - redact
+            - tokenize
+          type: object
+          title: Masking Method
+        partial_mask_reveal:
+          type: integer
+          maximum: 32.0
+          minimum: 0.0
+          title: Partial Mask Reveal
+          default: 4
+        confidence_threshold:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Confidence Threshold
+          default: 0.6
+        retention_days:
+          type: integer
+          maximum: 3650.0
+          minimum: 1.0
+          title: Retention Days
+          default: 90
+      additionalProperties: false
+      type: object
+      title: PolicyIn
+    PolicyOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        required_categories:
+          items:
+            type: string
+          type: array
+          title: Required Categories
+        masking_method:
+          additionalProperties:
+            type: string
+          type: object
+          title: Masking Method
+        partial_mask_reveal:
+          type: integer
+          title: Partial Mask Reveal
+        confidence_threshold:
+          type: number
+          title: Confidence Threshold
+        retention_days:
+          type: integer
+          title: Retention Days
+      type: object
+      required:
+      - id
+      - project_id
+      - required_categories
+      - masking_method
+      - partial_mask_reveal
+      - confidence_threshold
+      - retention_days
+      title: PolicyOut
+    ProjectIn:
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+        slug:
+          type: string
+          maxLength: 64
+          minLength: 2
+          pattern: ^[a-z0-9][a-z0-9-]*$
+          title: Slug
+        description:
+          type: string
+          maxLength: 500
+          title: Description
+          default: ''
+      additionalProperties: false
+      type: object
+      required:
+      - name
+      - slug
+      title: ProjectIn
+    ProjectOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        slug:
+          type: string
+          title: Slug
+        description:
+          type: string
+          title: Description
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      - description
+      - created_at
+      title: ProjectOut
+    ProjectUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 120
+            minLength: 1
+          - type: 'null'
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          title: Description
+      additionalProperties: false
+      type: object
+      title: ProjectUpdate
+    ProtectJsonIn:
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        payload:
+          title: Payload
+        method_overrides:
+          additionalProperties:
+            type: string
+            enum:
+            - full_mask
+            - partial_mask
+            - redact
+            - tokenize
+          type: object
+          title: Method Overrides
+        skip_categories:
+          items:
+            type: string
+          type: array
+          title: Skip Categories
+        scope_id:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Scope Id
+      additionalProperties: false
+      type: object
+      required:
+      - project_id
+      - payload
+      title: ProtectJsonIn
+    ProtectJsonOut:
+      properties:
+        protected:
+          title: Protected
+        findings:
+          items:
+            $ref: '#/components/schemas/ProtectedFindingOut'
+          type: array
+          title: Findings
+        review_count:
+          type: integer
+          title: Review Count
+        scope_id:
+          type: string
+          title: Scope Id
+      type: object
+      required:
+      - protected
+      - findings
+      - review_count
+      - scope_id
+      title: ProtectJsonOut
+    ProtectTextIn:
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        text:
+          type: string
+          maxLength: 2000000
+          title: Text
+        method_overrides:
+          additionalProperties:
+            type: string
+            enum:
+            - full_mask
+            - partial_mask
+            - redact
+            - tokenize
+          type: object
+          title: Method Overrides
+        skip_categories:
+          items:
+            type: string
+          type: array
+          title: Skip Categories
+        scope_id:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Scope Id
+      additionalProperties: false
+      type: object
+      required:
+      - project_id
+      - text
+      title: ProtectTextIn
+    ProtectTextOut:
+      properties:
+        protected:
+          type: string
+          title: Protected
+        findings:
+          items:
+            $ref: '#/components/schemas/ProtectedFindingOut'
+          type: array
+          title: Findings
+        review_count:
+          type: integer
+          title: Review Count
+        scope_id:
+          type: string
+          title: Scope Id
+      type: object
+      required:
+      - protected
+      - findings
+      - review_count
+      - scope_id
+      title: ProtectTextOut
+    ProtectedFindingOut:
+      properties:
+        category:
+          type: string
+          title: Category
+        start:
+          type: integer
+          title: Start
+        end:
+          type: integer
+          title: End
+        confidence:
+          type: number
+          title: Confidence
+        checksum_valid:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Checksum Valid
+        recognizer:
+          type: string
+          title: Recognizer
+        method:
+          type: string
+          title: Method
+        placeholder:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Placeholder
+        in_review:
+          type: boolean
+          title: In Review
+          default: false
+      type: object
+      required:
+      - category
+      - start
+      - end
+      - confidence
+      - checksum_valid
+      - recognizer
+      - method
+      title: ProtectedFindingOut
+    ReviewItemOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        category:
+          type: string
+          title: Category
+        start:
+          type: integer
+          title: Start
+        end:
+          type: integer
+          title: End
+        confidence:
+          type: number
+          title: Confidence
+        recognizer:
+          type: string
+          title: Recognizer
+        already_protected:
+          type: boolean
+          title: Already Protected
+        status:
+          type: string
+          title: Status
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        decided_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Decided At
+      type: object
+      required:
+      - id
+      - project_id
+      - category
+      - start
+      - end
+      - confidence
+      - recognizer
+      - already_protected
+      - status
+      - created_at
+      - decided_at
+      title: ReviewItemOut
+    ScanResultOut:
+      properties:
+        findings:
+          items:
+            $ref: '#/components/schemas/FindingOut'
+          type: array
+          title: Findings
+        review_count:
+          type: integer
+          title: Review Count
+      type: object
+      required:
+      - findings
+      - review_count
+      title: ScanResultOut
+    ScanTextIn:
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        text:
+          type: string
+          maxLength: 2000000
+          minLength: 0
+          title: Text
+      additionalProperties: false
+      type: object
+      required:
+      - project_id
+      - text
+      title: ScanTextIn
+    SessionOut:
+      properties:
+        token:
+          type: string
+          title: Token
+        user:
+          $ref: '#/components/schemas/UserOut'
+      type: object
+      required:
+      - token
+      - user
+      title: SessionOut
+    SignupIn:
+      properties:
+        org_name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Org Name
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          maxLength: 200
+          minLength: 10
+          title: Password
+      additionalProperties: false
+      type: object
+      required:
+      - org_name
+      - name
+      - email
+      - password
+      title: SignupIn
+    SummaryReport:
+      properties:
+        total_scans:
+          type: integer
+          title: Total Scans
+        total_findings:
+          type: integer
+          title: Total Findings
+        pending_review:
+          type: integer
+          title: Pending Review
+        findings_by_category:
+          items:
+            $ref: '#/components/schemas/CategoryCount'
+          type: array
+          title: Findings By Category
+        vault_entries:
+          type: integer
+          title: Vault Entries
+      type: object
+      required:
+      - total_scans
+      - total_findings
+      - pending_review
+      - findings_by_category
+      - vault_entries
+      title: SummaryReport
+    UserOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        org_id:
+          type: string
+          format: uuid
+          title: Org Id
+        email:
+          type: string
+          title: Email
+        name:
+          type: string
+          title: Name
+        role:
+          type: string
+          title: Role
+        vault_access:
+          type: boolean
+          title: Vault Access
+      type: object
+      required:
+      - id
+      - org_id
+      - email
+      - name
+      - role
+      - vault_access
+      title: UserOut
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    VaultGrantIn:
+      properties:
+        user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+        api_key_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Api Key Id
+      additionalProperties: false
+      type: object
+      title: VaultGrantIn
+    VaultGrantOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+        api_key_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Api Key Id
+        revoked_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Revoked At
+      type: object
+      required:
+      - id
+      - user_id
+      - api_key_id
+      title: VaultGrantOut
+servers:
+- url: http://localhost:5530
+  description: Local (make up)
