@@ -1,0 +1,41 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Overlay: the local containers against REAL AWS resources (the KMS key and the SES
+# identity from infra/terraform/envs/aws-dev, or your own). Postgres, Redis, Mailpit and
+# the web app stay local containers. Credentials come from your AWS CLI profile, mounted
+# read-only; resource names from .env.aws. Nothing here ever holds a static key. Only
+# migrate and the api call AWS.
+#
+# KEY_MODE stays local even here: 0.1.0's app code has no KMS-backed Sealer yet
+# (core/sealing.py raises NotImplementedError for key_mode=kms on purpose; see
+# docs/architecture/adr/0001-envelope-encryption-local-key-only.md) and no S3 storage or
+# Secrets Manager integration at all (core/config.py's own "accepted but unused" notes
+# on `storage` and `aws_secrets_enabled`). The real AWS KMS key this overlay could target
+# exists for `make tf-aws-on-floci` and a future KMS-backed Sealer, not for 0.1.0's
+# running app.
+#   cp deploy/compose/.env.aws.example deploy/compose/.env.aws   # then edit
+#   make up-aws
+# ─────────────────────────────────────────────────────────────────────────────
+x-aws-env: &aws-env
+  # `aws`, not `floci`: with ENVIRONMENT=production the API refuses an AWS_ENDPOINT_URL
+  # override in this mode.
+  PIISHIELD_CLOUD: aws
+  AWS_PROFILE: ${AWS_PROFILE:-default}
+  AWS_SDK_LOAD_CONFIG: "1"
+  AWS_CONFIG_FILE: /app/.aws/config
+  AWS_SHARED_CREDENTIALS_FILE: /app/.aws/credentials
+  KEY_MODE: local
+
+services:
+  migrate:
+    env_file: [.env.aws]
+    environment:
+      <<: *aws-env
+    volumes:
+      - ${HOME}/.aws:/app/.aws:ro
+
+  api:
+    env_file: [.env.aws]
+    environment:
+      <<: *aws-env
+    volumes:
+      - ${HOME}/.aws:/app/.aws:ro
