@@ -1,0 +1,13 @@
+{
+  "name": "piishield-node-quickstart",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@euron/piishield": "link:../../sdks/node"
+  }
+}
