@@ -1,0 +1,64 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sanitize:
+    name: sanitization and OpenAPI drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check-sanitization.sh
+      - uses: astral-sh/setup-uv@v6
+      - name: OpenAPI reference matches the app
+        working-directory: apps/api
+        run: uv sync --frozen && uv run pytest tests/unit -q -k openapi_drift
+
+  integration:
+    name: integration tests (Postgres 16, Redis 7, mock AI/LLM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16.10-alpine
+        env:
+          POSTGRES_USER: piishield
+          POSTGRES_PASSWORD: piishield
+          POSTGRES_DB: piishield
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U piishield"
+          --health-interval 3s --health-timeout 3s --health-retries 30
+      redis:
+        image: redis:7.4.6-alpine
+        ports: ["6379:6379"]
+        options: --health-cmd "redis-cli ping" --health-interval 3s --health-retries 30
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://piishield:piishield@localhost:5432/piishield_test
+      TEST_REDIS_URL: redis://localhost:6379/15
+      TEST_MOCKAI_URL: http://localhost:5250
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv python install 3.12 && uv sync --frozen
+      # The mock AI/LLM service: no key and no network needed.
+      - name: Mock AI/LLM service
+        run: |
+          uv run uvicorn piishield.mockai.app:app --host 127.0.0.1 --port 5250 > /tmp/mockai.log 2>&1 &
+          for _ in $(seq 1 30); do curl -sf http://127.0.0.1:5250/healthz && break; sleep 1; done
+      - run: uv run pytest tests/unit tests/integration -q --cov=piishield --cov-report=term-missing:skip-covered --cov-fail-under=85

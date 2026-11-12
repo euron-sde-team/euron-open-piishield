@@ -1,0 +1,41 @@
+name: docker
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          # The server image (api, migrate, CLI, mock AI/LLM service) and the
+          # dashboard.
+          - image: server
+            context: apps/api
+            target: server
+          - image: web
+            context: apps/web
+            target: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: infra/docker/${{ matrix.image }}.Dockerfile
+          target: ${{ matrix.target }}
+          build-args: |
+            API_URL=http://api:8080
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: piishield-${{ matrix.image }}:ci
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
