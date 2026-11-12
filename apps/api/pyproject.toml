@@ -1,0 +1,113 @@
+[project]
+name = "piishield"
+version = "0.1.0"
+description = "Euron Open PIIShield: detects, masks, redacts, tokenizes and anonymizes personal and financial data across text, JSON, documents and AI agent prompts."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "email-validator>=2.2",
+  "orjson>=3.10",
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.32",
+  "httpx>=0.28",
+  "pyjwt>=2.10",
+  "sqlalchemy[asyncio]>=2.1",
+  "asyncpg>=0.30",
+  "alembic>=1.14",
+  "redis>=5.2",
+  "argon2-cffi>=23.1",
+  "cryptography>=43",
+  "prometheus-client>=0.21",
+  "python-multipart>=0.0.20",
+  "pyyaml>=6.0",
+  "pymupdf>=1.24",
+  "python-docx>=1.1",
+  "openpyxl>=3.1",
+  "pymysql>=1.1",
+  # Alembic's autogenerate/upgrade run a synchronous engine; the app itself is async-only
+  # (asyncpg) at runtime, but `piishield migrate` is a production CLI command that must
+  # run in the shipped image, so this cannot live in the dev-only group.
+  "psycopg2-binary>=2.9",
+]
+
+[project.scripts]
+piishield = "piishield.cli:main"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "pytest-cov>=6.0",
+  "ruff>=0.8",
+  "mypy>=1.13",
+  "types-pyyaml>=6.0",
+  "types-openpyxl>=3.1",
+  "asgi-lifespan>=2.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/piishield"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "S", "A", "C4", "SIM", "RUF", "ASYNC", "PT"]
+# E501: ruff format holds code to 100 columns; the long lines left are messages and log
+# strings, kept whole so they stay greppable.
+ignore = ["S101", "B008", "RUF012", "RUF001", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S107", "S311", "S608", "PT018", "PT022", "PT011", "S110", "ASYNC110"]
+"src/piishield/migrations/**" = ["E501", "UP", "I"]
+"src/piishield/demo/**" = ["E501", "S311"]
+"src/piishield/mockai/**" = ["E501", "S311"]
+# Detection patterns read better on one line each (regular expressions cannot be wrapped).
+"src/piishield/detectors/recognizers.py" = ["E501"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+mypy_path = "src"
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["asgi_lifespan.*", "asyncpg.*", "fitz.*", "pymysql.*"]
+ignore_missing_imports = true
+
+# PyMuPDF ships a py.typed marker but many of its own methods are untyped internally, so
+# strict mode would otherwise flag every call into it; this module is a thin adapter
+# around that one library boundary, kept small and reviewed on its own.
+[[tool.mypy.overrides]]
+module = ["piishield.documents.pdf"]
+disallow_untyped_calls = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+markers = [
+  "integration: needs Postgres, Redis and the mock AI service (make test-integration)",
+]
+addopts = "-ra"
+faulthandler_timeout = 120
+
+[tool.coverage.run]
+source = ["piishield"]
+branch = true
+concurrency = ["greenlet", "thread"]
+omit = ["*/migrations/*", "*/demo/*", "*/mockai/*"]
+
+[tool.coverage.report]
+skip_empty = true
+show_missing = true
