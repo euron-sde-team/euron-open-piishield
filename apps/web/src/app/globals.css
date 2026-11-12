@@ -1,0 +1,248 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Variants the shadcn "base-nova" primitives are written against. Base UI marks
+ * state with bare data attributes (data-open, data-checked, ...).
+ */
+@custom-variant data-open {
+  &:where([data-state="open"]),
+  &:where([data-open]:not([data-open="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-closed {
+  &:where([data-state="closed"]),
+  &:where([data-closed]:not([data-closed="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-checked {
+  &:where([data-state="checked"]),
+  &:where([data-checked]:not([data-checked="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-unchecked {
+  &:where([data-state="unchecked"]),
+  &:where([data-unchecked]:not([data-unchecked="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-disabled {
+  &:where([data-disabled="true"]),
+  &:where([data-disabled]:not([data-disabled="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-active {
+  &:where([data-state="active"]),
+  &:where([data-active]:not([data-active="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-highlighted {
+  &:where([data-highlighted]) {
+    @slot;
+  }
+}
+
+/*
+ * PIIShield design tokens. Every color in the app comes from here: components use
+ * the semantic names (primary, savings, warning, danger, muted), never a hex.
+ * Structure comes from fills, spacing and soft shadows; borders are hairlines
+ * reserved for inputs and table rules. Accent is a deep violet, distinct from
+ * other Euron open-source products, chosen to read as "privacy / security" without
+ * reusing teal or orange (reserved for other Euron brand surfaces).
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--muted);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle: var(--subtle);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--foreground);
+  --color-destructive: var(--danger);
+  --color-border: var(--border);
+  --color-hairline: var(--hairline);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+
+  --color-savings: var(--savings);
+  --color-savings-soft: var(--savings-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-neutral-soft: var(--neutral-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --font-sans: var(--font-sans-stack);
+  --font-mono: var(--font-mono-stack);
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+
+  --shadow-xs: var(--elev-1);
+  --shadow-sm: var(--elev-1);
+  --shadow-md: var(--elev-2);
+  --shadow-lg: var(--elev-3);
+  --shadow-xl: var(--elev-4);
+}
+
+:root {
+  color-scheme: light;
+  --font-sans-stack: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono-stack: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --background: #f6f5fa;
+  --foreground: #16141f;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --sidebar: #efedf6;
+  --muted: #efedf6;
+  --accent: #e9e5f3;
+  --muted-foreground: #5c5870;
+  --subtle: #7a7690;
+  --faint: #a6a2b8;
+  --border: #e4e1ee;
+  --hairline: #ecebf3;
+  --input: #d9d5e6;
+  --ring: #6d28d9;
+
+  --primary: #6d28d9;
+  --primary-foreground: #ffffff;
+  --primary-soft: #efe8fc;
+
+  --savings: #047857;
+  --savings-soft: #e3f6ee;
+  --warning: #b45309;
+  --warning-soft: #fdf1dc;
+  --danger: #be123c;
+  --danger-soft: #fde7ec;
+  --info: #0369a1;
+  --info-soft: #e1f1fb;
+  --neutral-soft: #ece9f3;
+
+  /* Validated (dataviz validator) against both surfaces: same in light and dark. */
+  --chart-1: #7c3aed;
+  --chart-2: #0ea372;
+  --chart-3: #d97706;
+  --chart-4: #0ea5e9;
+  --chart-5: #db2777;
+  --chart-grid: #e8e6f0;
+  --chart-axis: #8a86a0;
+
+  --elev-1: 0 1px 2px rgba(22, 20, 31, 0.05);
+  --elev-2: 0 1px 2px rgba(22, 20, 31, 0.04), 0 2px 8px rgba(22, 20, 31, 0.05);
+  --elev-3: 0 2px 4px rgba(22, 20, 31, 0.05), 0 8px 24px rgba(22, 20, 31, 0.08);
+  --elev-4: 0 4px 12px rgba(22, 20, 31, 0.08), 0 16px 40px rgba(22, 20, 31, 0.12);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0e0c15;
+  --foreground: #ebe9f2;
+  --card: #161320;
+  --popover: #1b1726;
+  --sidebar: #110f19;
+  --muted: #1e1a2a;
+  --accent: #27213a;
+  --muted-foreground: #a39dba;
+  --subtle: #8c86a3;
+  --faint: #655f7a;
+  --border: #2a2438;
+  --hairline: #221d30;
+  --input: #332c47;
+  --ring: #a78bfa;
+
+  --primary: #a78bfa;
+  --primary-foreground: #140d26;
+  --primary-soft: #2a2047;
+
+  --savings: #34d399;
+  --savings-soft: #0f2a22;
+  --warning: #fbbf24;
+  --warning-soft: #2e2410;
+  --danger: #fb7185;
+  --danger-soft: #34151d;
+  --info: #38bdf8;
+  --info-soft: #0f2533;
+  --neutral-soft: #241f33;
+
+  --chart-grid: #241f33;
+  --chart-axis: #79748f;
+
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --elev-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --elev-3: 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 28px rgba(0, 0, 0, 0.35);
+  --elev-4: 0 6px 16px rgba(0, 0, 0, 0.4), 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans-stack);
+    font-feature-settings: "cv11", "ss01";
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 25%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Surface: the one "box" in the system, a fill plus a soft shadow, never an outline. */
+@utility surface {
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: var(--elev-2);
+}
+
+.recharts-wrapper *:focus {
+  outline: none;
+}
