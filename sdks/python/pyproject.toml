@@ -1,0 +1,89 @@
+[project]
+name = "euron-piishield"
+version = "0.1.0"
+description = "Python SDK for Euron Open PIIShield: detect, mask, redact, tokenize and anonymize PII across text, JSON, documents and AI prompts."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "ENGAGESPHERE TECHNOLOGY PRIVATE LIMITED and the Euron Open PIIShield contributors" }]
+requires-python = ">=3.10"
+keywords = ["pii", "privacy", "data-protection", "dlp", "redaction", "tokenization", "ai-gateway"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Security",
+  "Typing :: Typed",
+]
+dependencies = [
+  "httpx>=0.27,<1",
+]
+
+[project.urls]
+Homepage = "https://github.com/euron-sde-team/euron-open-piishield"
+Documentation = "https://github.com/euron-sde-team/euron-open-piishield/blob/main/sdks/python/README.md"
+Issues = "https://github.com/euron-sde-team/euron-open-piishield/issues"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "pytest-cov>=6.0",
+  "respx>=0.22",
+  "ruff>=0.8",
+  "mypy>=1.13",
+]
+
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/euron_piishield"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "README.md", "LICENSE", "pyproject.toml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "S", "A", "C4", "SIM", "RUF", "ASYNC", "PT"]
+ignore = ["S101", "B008", "RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S107", "S311", "E501", "PT011", "PT018", "ASYNC"]
+# ConnectionError and errors.py's module-level docstring intentionally name the same
+# concept as the builtin (a transport failure with no HTTP response to interpret); the
+# builtin is still reachable as builtins.ConnectionError everywhere else in the package.
+"src/euron_piishield/__init__.py" = ["A004"]
+"src/euron_piishield/errors.py" = ["A001"]
+
+[tool.mypy]
+strict = true
+python_version = "3.10"
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+markers = [
+  "integration: needs a running PIIShield API (set PIISHIELD_API_URL and PIISHIELD_API_KEY)",
+]
+addopts = "-ra"
+
+[tool.coverage.run]
+source = ["euron_piishield"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
