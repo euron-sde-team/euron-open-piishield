@@ -56,8 +56,10 @@ test-results/
 *.tsbuildinfo
 .cache/
 
-# Security scan output (make dast) and benchmark scratch
-reports/
+# Security scan output (make dast) and benchmark scratch. Anchored at the repo root:
+# unscoped "reports/" would also match apps/api/src/piishield/reports/ and
+# apps/web/src/features/reports/, this project's own dashboard-summary domain package.
+/reports/
 zap.yaml
 
 # Local backups (make backup)
